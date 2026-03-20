@@ -1,15 +1,38 @@
-# Elysia with Bun runtime
+# Spring
 
-## Getting Started
-To get started with this template, simply paste this command into your terminal:
-```bash
-bun create elysia ./elysia-example
-```
+Backend API for a placement helper system for NIT Kurukshetra. Built with Elysia + Bun + Drizzle + PostgreSQL.
 
-## Development
-To start the development server run:
+## Prerequisites
+
+- [Bun](https://bun.sh)
+- [Docker](https://docs.docker.com/get-docker/)
+
+## Setup
+
 ```bash
+# install dependencies
+bun install
+
+# create env file and fill in Google OAuth credentials
+cp .env.example .env
+
+# start postgres
+docker compose up -d
+
+# run migrations
+bun run db:migrate
+
+# start dev server (with hot reload)
 bun run dev
 ```
 
-Open http://localhost:3000/ with your browser to see the result.
+Server runs at http://localhost:3000
+
+## Scripts
+
+| Command | Description |
+|---|---|
+| `bun run dev` | Start dev server with hot reload |
+| `bun run db:generate` | Generate migration after schema changes |
+| `bun run db:migrate` | Apply pending migrations |
+| `bun run db:studio` | Open Drizzle Studio GUI |

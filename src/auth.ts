@@ -1,26 +1,31 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { drizzle } from "drizzle-orm/postgres-js";
-import { client } from "./db";
+import { Elysia } from "elysia";
+import { eq } from "drizzle-orm";
+import { db } from "./db";
 import * as schema from "./db/schema";
 
-const db = drizzle(client, { schema });
+const ALLOWED_DOMAIN = process.env.GOOGLE_ALLOWED_HD ?? "nitkkr.ac.in";
+
+function isAllowedEmail(email: string): boolean {
+  return email.endsWith(`@${ALLOWED_DOMAIN}`);
+}
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
     schema,
   }),
+  basePath: "/auth",
   baseURL: process.env.APP_BASE_URL,
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      mapProfileToUser: (profile) => {
-        return {
-          rollNumber: profile.email.split("@")[0],
-        };
-      },
+      hd: ALLOWED_DOMAIN,
+      mapProfileToUser: (profile) => ({
+        rollNumber: profile.email.split("@")[0],
+      }),
     },
   },
   user: {
@@ -51,4 +56,47 @@ export const auth = betterAuth({
       trustedProviders: ["google"],
     },
   },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (user) => {
+          if (!isAllowedEmail(user.email)) {
+            return false;
+          }
+        },
+      },
+    },
+    session: {
+      create: {
+        before: async (session) => {
+          const [row] = await db
+            .select({ email: schema.user.email })
+            .from(schema.user)
+            .where(eq(schema.user.id, session.userId))
+            .limit(1);
+
+          if (!row || !isAllowedEmail(row.email)) {
+            return false;
+          }
+        },
+      },
+    },
+  },
 });
+
+export const authPlugin = new Elysia({ name: "auth" })
+  .mount(auth.handler)
+  .macro({
+    auth: {
+      async resolve({ status, request: { headers } }) {
+        const session = await auth.api.getSession({ headers });
+
+        if (!session) return status(401);
+
+        return {
+          user: session.user,
+          session: session.session,
+        };
+      },
+    },
+  });

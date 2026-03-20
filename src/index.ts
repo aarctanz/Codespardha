@@ -1,5 +1,6 @@
 import { Elysia } from "elysia";
 import { connect, client } from "./db";
+import { authPlugin } from "./auth";
 
 try {
   await connect();
@@ -12,7 +13,10 @@ try {
   process.exit(1);
 }
 
-const app = new Elysia().get("/", () => "Hello Elysia").listen(3000);
+const app = new Elysia()
+  .use(authPlugin)
+  .get("/", () => "Hello Elysia")
+  .listen(3000);
 
 console.log(
   `[spring] server running at ${app.server?.hostname}:${app.server?.port}`

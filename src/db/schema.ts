@@ -10,6 +10,7 @@ import {
   index,
   integer,
   primaryKey,
+  real,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -187,6 +188,66 @@ export const problemTag = pgTable(
     primaryKey({ columns: [table.problemId, table.tagId] }),
     index("problem_tag_problem_id_idx").on(table.problemId),
   ],
+);
+
+export const submissionStatusEnum = pgEnum("submission_status", [
+  "pending",
+  "compiling",
+  "running",
+  "accepted",
+  "wrong_answer",
+  "time_limit_exceeded",
+  "runtime_error",
+  "compilation_error",
+  "internal_error",
+]);
+
+export const submission = pgTable(
+  "submission",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id),
+    problemId: uuid("problem_id")
+      .notNull()
+      .references(() => problem.id),
+    engineLanguageId: integer("engine_language_id").notNull(),
+    sourceCode: text("source_code").notNull(),
+    exec0Id: integer("exec0_id"),
+    status: submissionStatusEnum("status").notNull().default("pending"),
+    score: integer("score").notNull().default(0),
+    timeSec: real("time_sec"),
+    memoryKb: integer("memory_kb"),
+    compileOutput: text("compile_output"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("submission_user_id_idx").on(table.userId),
+    index("submission_problem_id_idx").on(table.problemId),
+  ]
+);
+
+export const submissionTestResult = pgTable(
+  "submission_test_result",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    submissionId: uuid("submission_id")
+      .notNull()
+      .references(() => submission.id),
+    position: integer("position").notNull(),
+    status: submissionStatusEnum("status").notNull().default("pending"),
+    timeSec: real("time_sec"),
+    memoryKb: integer("memory_kb"),
+    stdout: text("stdout"),
+    stderr: text("stderr"),
+    exitCode: integer("exit_code"),
+  },
+  (table) => [
+    index("submission_test_result_submission_id_idx").on(table.submissionId),
+  ]
 );
 
 export const testCase = pgTable(

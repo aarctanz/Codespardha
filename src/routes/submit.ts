@@ -1,22 +1,24 @@
 import { Elysia, t } from "elysia";
-import { runAgainstSamples, RunError } from "../services/run";
+import { createSubmission, SubmitError } from "../services/submit";
 
-export const runRoutes = new Elysia().post(
-  "/run",
-  async ({ body, set }) => {
+export const submitRoutes = new Elysia().post(
+  "/submit",
+  async ({ body, user, set }) => {
     try {
-      return await runAgainstSamples(
+      const submissionId = await createSubmission(
+        user.id,
         body.slug,
         body.engineLanguageId,
         body.sourceCode
       );
+      return { submissionId };
     } catch (err) {
-      if (err instanceof RunError) {
+      if (err instanceof SubmitError) {
         set.status = err.statusCode;
         return { error: err.message };
       }
       set.status = 500;
-      return { error: "Code execution failed. Please try again." };
+      return { error: "Submission failed. Please try again." };
     }
   },
   {

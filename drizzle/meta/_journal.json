@@ -36,6 +36,13 @@
       "when": 1774076400235,
       "tag": "0004_gifted_purifiers",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1774097080828,
+      "tag": "0005_black_maximus",
+      "breakpoints": true
     }
   ]
 }

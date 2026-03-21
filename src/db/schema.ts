@@ -46,7 +46,7 @@ export const session = pgTable(
   (table) => [
     index("session_user_id_idx").on(table.userId),
     index("session_expires_at_idx").on(table.expiresAt),
-  ]
+  ],
 );
 
 export const account = pgTable("account", {
@@ -96,11 +96,21 @@ export const userHandle = pgTable(
   (table) => [
     uniqueIndex("user_handle_user_platform_idx").on(
       table.userId,
-      table.platform
+      table.platform,
     ),
     index("user_handle_user_id_idx").on(table.userId),
-  ]
+  ],
 );
+
+// ── Language table ──────────────────────────────────────────────────
+
+export const language = pgTable("language", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  version: text("version").notNull(),
+  engineLanguageId: integer("engine_language_id").notNull().unique(),
+  isActive: boolean("is_active").notNull().default(true),
+});
 
 // ── Contest tables ──────────────────────────────────────────────────
 
@@ -155,7 +165,7 @@ export const problem = pgTable(
   (table) => [
     uniqueIndex("problem_contest_label_idx").on(table.contestId, table.label),
     index("problem_contest_id_idx").on(table.contestId),
-  ]
+  ],
 );
 
 export const tag = pgTable("tag", {
@@ -176,7 +186,7 @@ export const problemTag = pgTable(
   (table) => [
     primaryKey({ columns: [table.problemId, table.tagId] }),
     index("problem_tag_problem_id_idx").on(table.problemId),
-  ]
+  ],
 );
 
 export const testCase = pgTable(
@@ -194,7 +204,5 @@ export const testCase = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [
-    index("test_case_problem_id_idx").on(table.problemId),
-  ]
+  (table) => [index("test_case_problem_id_idx").on(table.problemId)],
 );

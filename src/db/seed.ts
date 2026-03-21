@@ -2,7 +2,8 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 import { eq } from "drizzle-orm";
 import { db, client } from "./index";
-import { contest, problem, testCase, tag, problemTag } from "./schema";
+import { contest, problem, testCase, tag, problemTag, language } from "./schema";
+import { setupLogger, logger } from "../lib/logger";
 
 const PROBLEMS_DIR = resolve(import.meta.dir, "../../problems");
 
@@ -19,7 +20,8 @@ interface ProblemData {
 const LABELS = ["A", "B", "C", "D"];
 
 async function seed() {
-  console.log("Seeding database...");
+  await setupLogger();
+  logger.info`seeding database...`;
 
   // Create contest (startTime in the past so problems are visible)
   const now = new Date();
@@ -36,9 +38,7 @@ async function seed() {
     })
     .returning({ id: contest.id, contestNumber: contest.contestNumber });
 
-  console.log(
-    `Created contest #${createdContest.contestNumber} (${createdContest.id})`
-  );
+  logger.info`created contest #${createdContest.contestNumber}`;
 
   // Insert problems from JSON files
   for (const label of LABELS) {
@@ -64,7 +64,7 @@ async function seed() {
       })
       .returning({ id: problem.id });
 
-    console.log(`  ${slug}: ${title}`);
+    logger.info`  ${slug}: ${title}`;
 
     // Insert test cases
     const testCases: (typeof testCase.$inferInsert)[] = [];
@@ -117,15 +117,37 @@ async function seed() {
       });
     }
 
-    console.log(`    ${testCases.length} test cases, ${data.cf_tags.length} tags`);
+    logger.info`    ${testCases.length} test cases, ${data.cf_tags.length} tags`;
   }
 
-  console.log("Seed complete!");
+  // Fetch and seed languages from execution engine
+  const engineUrl = process.env.ENGINE_URL ?? "http://localhost:8080";
+  const res = await fetch(`${engineUrl}/languages`);
+  if (!res.ok) {
+    logger.error`failed to fetch languages: ${res.status}`;
+    throw new Error(`Failed to fetch languages: ${res.status}`);
+  }
+  const languages: { id: number; name: string; version: string; is_archived: boolean }[] = await res.json();
+
+  for (const lang of languages) {
+    if (lang.is_archived) continue;
+    await db
+      .insert(language)
+      .values({
+        name: lang.name,
+        version: lang.version,
+        engineLanguageId: lang.id,
+      })
+      .onConflictDoNothing();
+  }
+  logger.info`seeded ${languages.filter((l) => !l.is_archived).length} languages`;
+
+  logger.info`seed complete!`;
 }
 
 seed()
   .catch((err) => {
-    console.error("Seed failed:", err);
+    logger.error`seed failed: ${err instanceof Error ? err.message : err}`;
     process.exit(1);
   })
   .finally(() => client.end());

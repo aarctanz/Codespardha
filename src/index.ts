@@ -7,6 +7,7 @@ import { authPlugin, authOpenAPI } from "./auth";
 import { cors } from "./middleware/cors";
 import { contestRoutes } from "./routes/contest";
 import { problemsetRoutes } from "./routes/problemset";
+import { languageRoutes } from "./routes/language";
 
 await setupLogger();
 
@@ -48,6 +49,7 @@ const app = new Elysia()
   .use(authPlugin)
   .use(contestRoutes)
   .use(problemsetRoutes)
+  .use(languageRoutes)
   .get("/", () => "Hello Elysia")
   .listen(Number(process.env.PORT ?? 3000));
 

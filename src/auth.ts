@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { openAPI } from "better-auth/plugins";
 import { Elysia } from "elysia";
 import { eq } from "drizzle-orm";
 import { db } from "./db";
@@ -56,6 +57,7 @@ export const auth = betterAuth({
       trustedProviders: ["google"],
     },
   },
+  plugins: [openAPI({ disableDefaultReference: true })],
   databaseHooks: {
     user: {
       create: {
@@ -83,6 +85,28 @@ export const auth = betterAuth({
     },
   },
 });
+
+let _authOpenAPISchema: ReturnType<typeof auth.api.generateOpenAPISchema>;
+const getAuthSchema = async () =>
+  (_authOpenAPISchema ??= auth.api.generateOpenAPISchema());
+
+export const authOpenAPI = {
+  getPaths: (prefix = "/auth") =>
+    getAuthSchema().then(({ paths }) => {
+      const prefixed: typeof paths = Object.create(null);
+      for (const path of Object.keys(paths)) {
+        const key = prefix + path;
+        prefixed[key] = paths[path];
+        for (const method of Object.keys(paths[path])) {
+          const operation = (prefixed[key] as any)[method];
+          operation.tags = ["Auth"];
+        }
+      }
+      return prefixed;
+    }) as Promise<any>,
+  getComponents: () =>
+    getAuthSchema().then(({ components }) => components) as Promise<any>,
+};
 
 export const authPlugin = new Elysia({ name: "auth" })
   .mount(auth.handler)

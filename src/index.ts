@@ -3,8 +3,10 @@ import { openapi } from "@elysiajs/openapi";
 import { elysiaLogger } from "@logtape/elysia";
 import { setupLogger, logger } from "./lib/logger";
 import { connect, client } from "./db";
-import { authPlugin } from "./auth";
+import { authPlugin, authOpenAPI } from "./auth";
 import { cors } from "./middleware/cors";
+import { contestRoutes } from "./routes/contest";
+import { problemsetRoutes } from "./routes/problemset";
 
 await setupLogger();
 
@@ -25,6 +27,9 @@ const app = new Elysia()
           version: "1.0.0",
           description: "Placement helper system API for NIT Kurukshetra",
         },
+        tags: [{ name: "Auth", description: "Authentication routes" }],
+        components: await authOpenAPI.getComponents(),
+        paths: await authOpenAPI.getPaths(),
       },
     })
   )
@@ -41,7 +46,9 @@ const app = new Elysia()
   )
   .use(cors)
   .use(authPlugin)
+  .use(contestRoutes)
+  .use(problemsetRoutes)
   .get("/", () => "Hello Elysia")
-  .listen(3000);
+  .listen(Number(process.env.PORT ?? 3000));
 
 logger.info`server running at ${app.server?.hostname}:${app.server?.port}`;

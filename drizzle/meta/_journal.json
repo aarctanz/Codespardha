@@ -8,6 +8,20 @@
       "when": 1774022118315,
       "tag": "0000_shiny_gateway",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774038302008,
+      "tag": "0001_clever_captain_stacy",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774067794300,
+      "tag": "0002_jazzy_miek",
+      "breakpoints": true
     }
   ]
 }

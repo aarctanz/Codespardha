@@ -10,6 +10,30 @@ services:
       - "${DB_PORT:-5433}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER:-spring}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  spring:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${PGUSER:-spring}:${PGPASSWORD:-spring}@db:5432/${PGDATABASE:-spring}
+    ports:
+      - "${PORT:-3001}:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - default
+      - exec0_default
 
 volumes:
   pgdata:
+    name: spring_pgdata
+
+networks:
+  exec0_default:
+    external: true

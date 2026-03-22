@@ -11,6 +11,7 @@ import { languageRoutes } from "./routes/language";
 import { runRoutes } from "./routes/run";
 import { submitRoutes } from "./routes/submit";
 import { submissionRoutes } from "./routes/submission";
+import { profileRoutes } from "./routes/profile";
 
 await setupLogger();
 
@@ -56,6 +57,7 @@ const app = new Elysia()
   .use(runRoutes)
   .use(submitRoutes)
   .use(submissionRoutes)
+  .use(profileRoutes)
   .get("/", () => "Hello Elysia")
   .get("/time", () => ({ serverTime: new Date().toISOString() }))
   .listen(Number(process.env.PORT ?? 3000));

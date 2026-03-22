@@ -110,7 +110,7 @@ export async function createSubmission(
     .where(eq(submission.id, sub.id));
 
   // Background poll — fire and forget
-  pollAndSave(sub.id, exec0Id, prob.score, userId, prob.id).catch(async (err) => {
+  pollAndSave(sub.id, exec0Id, isContestSubmission ? prob.score : 0, userId, prob.id).catch(async (err) => {
     logger.error`failed to poll submission ${sub.id}: ${err instanceof Error ? err.message : err}`;
     await db
       .update(submission)
@@ -146,6 +146,14 @@ async function pollAndSave(
     );
   }
 
+  // Aggregate time (max) and memory (max) from individual test cases
+  const maxTimeSec = result.test_cases.reduce(
+    (max, tc) => Math.max(max, tc.time ?? 0), 0
+  ) || result.time;
+  const maxMemoryKb = result.test_cases.reduce(
+    (max, tc) => Math.max(max, tc.memory ?? 0), 0
+  ) || result.memory;
+
   // All-or-nothing scoring
   const score = result.status === "accepted" ? problemScore : 0;
 
@@ -155,8 +163,8 @@ async function pollAndSave(
     .set({
       status: result.status as typeof submission.$inferInsert.status,
       score,
-      timeSec: result.time,
-      memoryKb: result.memory,
+      timeSec: maxTimeSec,
+      memoryKb: maxMemoryKb,
       compileOutput: result.compile_output || null,
     })
     .where(eq(submission.id, submissionId));

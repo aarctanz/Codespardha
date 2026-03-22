@@ -2,6 +2,13 @@ import { eq, lte, desc, asc, and, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { problem, testCase, problemTag, tag, userProblemSolved } from "../db/schema";
 
+function difficultyLabel(d: number | null): string {
+  if (d === null) return "easy";
+  if (d <= 4) return "easy";
+  if (d <= 8) return "medium";
+  return "hard";
+}
+
 const problemColumns = {
   slug: problem.slug,
   label: problem.label,
@@ -55,8 +62,9 @@ export async function getVisibleProblems(userId: string | null = null) {
   ]);
 
   return Promise.all(
-    rows.map(async ({ id, ...rest }) => ({
+    rows.map(async ({ id, difficulty, ...rest }) => ({
       ...rest,
+      difficulty: difficultyLabel(difficulty),
       solved: solvedSet.has(id),
       tags: await getTagsForProblem(id),
     }))
@@ -85,8 +93,8 @@ export async function getProblemBySlug(slug: string, userId: string | null = nul
     getSolvedSet(userId, [row.id]),
   ]);
 
-  const { id: _, ...rest } = row;
-  return { ...rest, solved: solvedSet.has(row.id), tags, testCases: sampleTestCases };
+  const { id: _, difficulty, ...rest } = row;
+  return { ...rest, difficulty: difficultyLabel(difficulty), solved: solvedSet.has(row.id), tags, testCases: sampleTestCases };
 }
 
 export async function getProblemsByContest(contestId: string, userId: string | null = null) {
@@ -99,8 +107,9 @@ export async function getProblemsByContest(contestId: string, userId: string | n
   const solvedSet = await getSolvedSet(userId, rows.map((r) => r.id));
 
   return Promise.all(
-    rows.map(async ({ id, ...rest }) => ({
+    rows.map(async ({ id, difficulty, ...rest }) => ({
       ...rest,
+      difficulty: difficultyLabel(difficulty),
       solved: solvedSet.has(id),
       tags: await getTagsForProblem(id),
     }))

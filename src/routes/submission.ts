@@ -8,10 +8,16 @@ export const submissionRoutes = new Elysia({ prefix: "/submissions" })
   // List current user's submissions
   .get(
     "/",
-    async ({ user }) => {
-      return submissionService.getUserSubmissions(user.id);
+    async ({ user, query }) => {
+      return submissionService.getUserSubmissions(user.id, query.page, query.pageSize);
     },
-    { auth: true }
+    {
+      auth: true,
+      query: t.Object({
+        page: t.Number({ default: 1 }),
+        pageSize: t.Number({ default: 20 }),
+      }),
+    }
   )
 
   // Get submission detail (own only)

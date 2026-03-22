@@ -1,29 +1,49 @@
-import { eq, and, desc, asc } from "drizzle-orm";
+import { eq, and, desc, asc, count, sql } from "drizzle-orm";
 import { db } from "../db";
-import { submission, submissionTestResult, problem, language } from "../db/schema";
+import { submission, submissionTestResult, problem, language, testCase } from "../db/schema";
 
-export async function getUserSubmissions(userId: string) {
-  return db
-    .select({
-      id: submission.id,
-      slug: problem.slug,
-      problemTitle: problem.title,
-      languageName: language.name,
-      engineLanguageId: submission.engineLanguageId,
-      status: submission.status,
-      score: submission.score,
-      timeSec: submission.timeSec,
-      memoryKb: submission.memoryKb,
-      createdAt: submission.createdAt,
-    })
-    .from(submission)
-    .innerJoin(problem, eq(submission.problemId, problem.id))
-    .innerJoin(
-      language,
-      eq(submission.engineLanguageId, language.engineLanguageId)
-    )
-    .where(eq(submission.userId, userId))
-    .orderBy(desc(submission.createdAt));
+const DEFAULT_PAGE_SIZE = 20;
+
+export async function getUserSubmissions(userId: string, page: number = 1, pageSize: number = DEFAULT_PAGE_SIZE) {
+  const offset = (page - 1) * pageSize;
+
+  const [items, [{ total }]] = await Promise.all([
+    db
+      .select({
+        id: submission.id,
+        slug: problem.slug,
+        problemTitle: problem.title,
+        languageName: language.name,
+        engineLanguageId: submission.engineLanguageId,
+        status: submission.status,
+        score: submission.score,
+        timeSec: submission.timeSec,
+        memoryKb: submission.memoryKb,
+        createdAt: submission.createdAt,
+      })
+      .from(submission)
+      .innerJoin(problem, eq(submission.problemId, problem.id))
+      .innerJoin(
+        language,
+        eq(submission.engineLanguageId, language.engineLanguageId)
+      )
+      .where(eq(submission.userId, userId))
+      .orderBy(desc(submission.createdAt))
+      .limit(pageSize)
+      .offset(offset),
+    db
+      .select({ total: count() })
+      .from(submission)
+      .where(eq(submission.userId, userId)),
+  ]);
+
+  return {
+    items,
+    page,
+    pageSize,
+    total,
+    totalPages: Math.ceil(total / pageSize),
+  };
 }
 
 export async function getSubmissionById(submissionId: string, userId: string) {
@@ -31,6 +51,7 @@ export async function getSubmissionById(submissionId: string, userId: string) {
     .select({
       id: submission.id,
       userId: submission.userId,
+      problemId: submission.problemId,
       slug: problem.slug,
       problemTitle: problem.title,
       languageName: language.name,
@@ -63,11 +84,20 @@ export async function getSubmissionById(submissionId: string, userId: string) {
       stdout: submissionTestResult.stdout,
       stderr: submissionTestResult.stderr,
       exitCode: submissionTestResult.exitCode,
+      stdin: testCase.input,
+      expectedOutput: testCase.expectedOutput,
     })
     .from(submissionTestResult)
+    .innerJoin(
+      testCase,
+      and(
+        eq(testCase.problemId, sub.problemId),
+        eq(testCase.order, sql`${submissionTestResult.position} - 1`)
+      )
+    )
     .where(eq(submissionTestResult.submissionId, submissionId))
     .orderBy(asc(submissionTestResult.position));
 
-  const { userId: _, ...rest } = sub;
+  const { userId: _, problemId: __, ...rest } = sub;
   return { ...rest, testResults };
 }

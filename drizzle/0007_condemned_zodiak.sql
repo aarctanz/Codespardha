@@ -1,0 +1,1 @@
+ALTER TYPE "public"."submission_status" ADD VALUE 'memory_limit_exceeded' BEFORE 'runtime_error';

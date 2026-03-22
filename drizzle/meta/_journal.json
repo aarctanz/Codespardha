@@ -50,6 +50,13 @@
       "when": 1774167353730,
       "tag": "0006_tense_sersi",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1774170958973,
+      "tag": "0007_condemned_zodiak",
+      "breakpoints": true
     }
   ]
 }

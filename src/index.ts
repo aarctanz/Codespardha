@@ -2,7 +2,8 @@ import { Elysia } from "elysia";
 import { openapi } from "@elysiajs/openapi";
 import { elysiaLogger } from "@logtape/elysia";
 import { setupLogger, logger } from "./lib/logger";
-import { connect, client } from "./db";
+import { connect, client, db } from "./db";
+import { sql } from "drizzle-orm";
 import { authPlugin, authOpenAPI } from "./auth";
 import { cors } from "./middleware/cors";
 import { contestRoutes } from "./routes/contest";
@@ -60,6 +61,15 @@ const app = new Elysia()
   .use(profileRoutes)
   .get("/", () => "Hello Elysia")
   .get("/time", () => ({ serverTime: new Date().toISOString() }))
+  .get("/health", async ({ set }) => {
+    try {
+      await db.execute(sql`SELECT 1`);
+      return { status: "healthy", database: "connected" };
+    } catch {
+      set.status = 503;
+      return { status: "unhealthy", database: "disconnected" };
+    }
+  })
   .listen(Number(process.env.PORT ?? 3000));
 
 logger.info`server running at ${app.server?.hostname}:${app.server?.port}`;

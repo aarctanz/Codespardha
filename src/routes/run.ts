@@ -2,13 +2,18 @@ import { Elysia, t } from "elysia";
 import { getLogger } from "@logtape/logtape";
 import { authPlugin } from "../auth";
 import { runAgainstSamples, RunError } from "../services/run";
+import { hasApproach } from "../services/approach";
 
 const logger = getLogger(["spring", "run"]);
 
 export const runRoutes = new Elysia().use(authPlugin).post(
   "/run",
-  async ({ body, set }) => {
+  async ({ user, body, set }) => {
     try {
+      if (!(await hasApproach(user.id, body.slug))) {
+        set.status = 403;
+        return { error: "Submit your approach before running code" };
+      }
       return await runAgainstSamples(
         body.slug,
         body.engineLanguageId,

@@ -62,13 +62,24 @@ const app = new Elysia()
   .get("/", () => "Hello Elysia")
   .get("/time", () => ({ serverTime: new Date().toISOString() }))
   .get("/health", async ({ set }) => {
+    const checks = { database: "disconnected", exec0: "disconnected" };
+
     try {
       await db.execute(sql`SELECT 1`);
-      return { status: "healthy", database: "connected" };
-    } catch {
-      set.status = 503;
-      return { status: "unhealthy", database: "disconnected" };
-    }
+      checks.database = "connected";
+    } catch {}
+
+    try {
+      const res = await fetch(
+        `${process.env.ENGINE_URL ?? "http://localhost:8080"}/health`,
+        { signal: AbortSignal.timeout(3000) }
+      );
+      if (res.ok) checks.exec0 = "connected";
+    } catch {}
+
+    const healthy = checks.database === "connected" && checks.exec0 === "connected";
+    if (!healthy) set.status = 503;
+    return { status: healthy ? "healthy" : "unhealthy", ...checks };
   })
   .listen(Number(process.env.PORT ?? 3000));
 

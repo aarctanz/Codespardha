@@ -190,6 +190,31 @@ export const problemTag = pgTable(
   ],
 );
 
+export const approach = pgTable(
+  "approach",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id),
+    problemId: uuid("problem_id")
+      .notNull()
+      .references(() => problem.id),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("approach_user_problem_idx").on(table.userId, table.problemId),
+    index("approach_problem_id_idx").on(table.problemId),
+  ]
+);
+
 export const submissionStatusEnum = pgEnum("submission_status", [
   "pending",
   "compiling",

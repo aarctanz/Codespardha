@@ -127,7 +127,7 @@ async function seed() {
     logger.error`failed to fetch languages: ${res.status}`;
     throw new Error(`Failed to fetch languages: ${res.status}`);
   }
-  const languages: { id: number; name: string; version: string; is_archived: boolean }[] = await res.json();
+  const languages = await res.json() as { id: number; name: string; version: string; is_archived: boolean }[];
 
   for (const lang of languages) {
     if (lang.is_archived) continue;

@@ -3,6 +3,7 @@ import { getLogger } from "@logtape/logtape";
 import { authPlugin } from "../auth";
 import { runAgainstSamples, RunError } from "../services/run";
 import { hasApproach } from "../services/approach";
+import { checkRunRateLimit, recordRun } from "../lib/ratelimit";
 
 const logger = getLogger(["spring", "run"]);
 
@@ -14,6 +15,12 @@ export const runRoutes = new Elysia().use(authPlugin).post(
         set.status = 403;
         return { error: "Submit your approach before running code" };
       }
+      const wait = checkRunRateLimit(user.id, body.slug);
+      if (wait !== null) {
+        set.status = 429;
+        return { error: `Too many runs. Try again in ${wait}s` };
+      }
+      recordRun(user.id, body.slug);
       return await runAgainstSamples(
         body.slug,
         body.engineLanguageId,

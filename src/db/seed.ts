@@ -2,7 +2,14 @@ import { readFileSync } from "fs";
 import { resolve } from "path";
 import { eq } from "drizzle-orm";
 import { db, client } from "./index";
-import { contest, problem, testCase, tag, problemTag, language } from "./schema";
+import {
+  contest,
+  problem,
+  testCase,
+  tag,
+  problemTag,
+  language,
+} from "./schema";
 import { setupLogger, logger } from "../lib/logger";
 
 const PROBLEMS_DIR = resolve(import.meta.dir, "../../problems");
@@ -127,7 +134,12 @@ async function seed() {
     logger.error`failed to fetch languages: ${res.status}`;
     throw new Error(`Failed to fetch languages: ${res.status}`);
   }
-  const languages = await res.json() as { id: number; name: string; version: string; is_archived: boolean }[];
+  const languages = (await res.json()) as {
+    id: number;
+    name: string;
+    version: string;
+    is_archived: boolean;
+  }[];
 
   for (const lang of languages) {
     if (lang.is_archived) continue;

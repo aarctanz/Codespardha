@@ -2,6 +2,7 @@ import { Elysia, t } from "elysia";
 import { authPlugin } from "../auth";
 import { createSubmission, SubmitError } from "../services/submit";
 import { hasApproach } from "../services/approach";
+import { checkSubmitRateLimit } from "../lib/ratelimit";
 
 export const submitRoutes = new Elysia().use(authPlugin).post(
   "/submit",
@@ -10,6 +11,11 @@ export const submitRoutes = new Elysia().use(authPlugin).post(
       if (!(await hasApproach(user.id, body.slug))) {
         set.status = 403;
         return { error: "Submit your approach before submitting code" };
+      }
+      const wait = await checkSubmitRateLimit(user.id, body.slug);
+      if (wait !== null) {
+        set.status = 429;
+        return { error: `Too many submissions. Try again in ${wait}s` };
       }
       const submissionId = await createSubmission(
         user.id,

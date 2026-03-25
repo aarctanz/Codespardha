@@ -1,0 +1,17 @@
+{
+  "title": "Problem Title",
+  "description": "Full problem statement in **markdown**.\n\n## Input\nFirst line contains integer $n$.\n\n## Output\nPrint YES or NO.",
+  "difficulty": 3,
+  "score": 500,
+  "timeLimitMs": 1000,
+  "memoryLimitMb": 256,
+  "tags": ["math", "greedy"],
+  "publicTests": [
+    { "input": "5\n", "output": "YES\n" },
+    { "input": "3\n", "output": "NO\n" }
+  ],
+  "privateTests": [
+    { "input": "100\n", "output": "YES\n" },
+    { "input": "7\n", "output": "NO\n" }
+  ]
+}

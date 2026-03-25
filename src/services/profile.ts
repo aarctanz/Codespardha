@@ -1,6 +1,24 @@
 import { eq, sql, count } from "drizzle-orm";
 import { db } from "../db";
-import { userProblemSolved, problem, submission } from "../db/schema";
+import { user, userProblemSolved, problem, submission } from "../db/schema";
+
+export async function getPublicProfile(rollNumber: string) {
+  const [row] = await db
+    .select({
+      id: user.id,
+      name: user.name,
+      image: user.image,
+      rollNumber: user.rollNumber,
+    })
+    .from(user)
+    .where(eq(user.rollNumber, rollNumber))
+    .limit(1);
+
+  if (!row) return null;
+
+  const stats = await getProfileStats(row.id);
+  return { name: row.name, image: row.image, rollNumber: row.rollNumber, ...stats };
+}
 
 export async function getProfileStats(userId: string) {
   const rows = await db

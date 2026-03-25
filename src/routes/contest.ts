@@ -33,4 +33,37 @@ export const contestRoutes = new Elysia({ prefix: "/contests" })
       auth: true,
       params: t.Object({ contestNumber: t.Number() }),
     }
+  )
+
+  // Get contest leaderboard (only available after contest ends)
+  .get(
+    "/:contestNumber/leaderboard",
+    async ({ params, query, user, set }) => {
+      const contest = await contestService.getContestByNumber(
+        params.contestNumber
+      );
+      if (!contest) {
+        set.status = 404;
+        return { error: "Contest not found" };
+      }
+      const result = await contestService.getLeaderboard(
+        contest.id,
+        user.id,
+        query.page,
+        query.pageSize,
+      );
+      if (result && !result.ended) {
+        set.status = 403;
+        return { error: "Leaderboard available after contest ends" };
+      }
+      return result;
+    },
+    {
+      auth: true,
+      params: t.Object({ contestNumber: t.Number() }),
+      query: t.Object({
+        page: t.Number({ default: 1 }),
+        pageSize: t.Number({ default: 50 }),
+      }),
+    }
   );

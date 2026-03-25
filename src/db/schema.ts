@@ -139,6 +139,29 @@ export const contest = pgTable("contest", {
     .$onUpdate(() => new Date()),
 });
 
+export const leaderboardEntry = pgTable(
+  "leaderboard_entry",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    contestId: uuid("contest_id")
+      .notNull()
+      .references(() => contest.id),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id),
+    rank: integer("rank").notNull(),
+    totalScore: integer("total_score").notNull(),
+    penalty: integer("penalty").notNull().default(0),
+    problemsSolved: integer("problems_solved").notNull(),
+    lastAcceptedAt: timestamp("last_accepted_at", { withTimezone: true }),
+    breakdown: text("breakdown").notNull(), // JSON string of per-problem scores
+  },
+  (table) => [
+    uniqueIndex("leaderboard_contest_user_idx").on(table.contestId, table.userId),
+    index("leaderboard_contest_rank_idx").on(table.contestId, table.rank),
+  ]
+);
+
 export const problem = pgTable(
   "problem",
   {

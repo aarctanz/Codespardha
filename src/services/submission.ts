@@ -1,6 +1,6 @@
 import { eq, and, desc, asc, count, sql } from "drizzle-orm";
 import { db } from "../db";
-import { submission, submissionTestResult, problem, language, testCase } from "../db/schema";
+import { submission, submissionTestResult, problem, language, testCase, contest } from "../db/schema";
 
 const DEFAULT_PAGE_SIZE = 20;
 
@@ -52,6 +52,7 @@ export async function getSubmissionById(submissionId: string, userId: string) {
       id: submission.id,
       userId: submission.userId,
       problemId: submission.problemId,
+      contestId: submission.contestId,
       slug: problem.slug,
       problemTitle: problem.title,
       languageName: language.name,
@@ -74,6 +75,17 @@ export async function getSubmissionById(submissionId: string, userId: string) {
     .limit(1);
 
   if (!sub) return null;
+
+  // Check if contest is still active
+  let contestActive = false;
+  if (sub.contestId) {
+    const [c] = await db
+      .select({ endTime: contest.endTime })
+      .from(contest)
+      .where(eq(contest.id, sub.contestId))
+      .limit(1);
+    if (c && new Date() < c.endTime) contestActive = true;
+  }
 
   const testResults = await db
     .select({
@@ -98,6 +110,17 @@ export async function getSubmissionById(submissionId: string, userId: string) {
     .where(eq(submissionTestResult.submissionId, submissionId))
     .orderBy(asc(submissionTestResult.position));
 
-  const { userId: _, problemId: __, ...rest } = sub;
+  const { userId: _, problemId: __, contestId: ___, ...rest } = sub;
+
+  if (contestActive) {
+    return {
+      ...rest,
+      testResults: testResults.map((tr) => ({
+        position: tr.position,
+        status: tr.status,
+      })),
+    };
+  }
+
   return { ...rest, testResults };
 }

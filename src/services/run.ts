@@ -76,6 +76,20 @@ export async function runAgainstSamples(
   return formatResult(result);
 }
 
+const MAX_OUTPUT_BYTES = 64 * 1024; // 64 KB
+
+export function truncateOutput(value: string | null | undefined): string | null {
+  if (!value) return value ?? null;
+  const encoder = new TextEncoder();
+  if (encoder.encode(value).length <= MAX_OUTPUT_BYTES) return value;
+  // Binary search would be overkill — slice conservatively by chars then trim
+  let truncated = value.slice(0, MAX_OUTPUT_BYTES);
+  while (encoder.encode(truncated).length > MAX_OUTPUT_BYTES) {
+    truncated = truncated.slice(0, -1024);
+  }
+  return truncated + "\n[truncated]";
+}
+
 function formatResult(sub: exec0.SubmissionResponse) {
   return {
     status: sub.status,
@@ -87,8 +101,8 @@ function formatResult(sub: exec0.SubmissionResponse) {
       status: tc.status,
       stdin: tc.stdin,
       expectedOutput: tc.expected_output,
-      stdout: tc.stdout,
-      stderr: tc.stderr,
+      stdout: truncateOutput(tc.stdout),
+      stderr: truncateOutput(tc.stderr),
       time: tc.time,
       memory: tc.memory,
     })),

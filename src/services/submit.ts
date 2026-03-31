@@ -1,4 +1,5 @@
 import { eq, and, asc } from "drizzle-orm";
+import { truncateOutput } from "./run";
 import { getLogger } from "@logtape/logtape";
 import { db } from "../db";
 import {
@@ -139,8 +140,8 @@ async function pollAndSave(
         status: tc.status as typeof submissionTestResult.$inferInsert.status,
         timeSec: tc.time,
         memoryKb: tc.memory,
-        stdout: tc.stdout,
-        stderr: tc.stderr,
+        stdout: truncateOutput(tc.stdout),
+        stderr: truncateOutput(tc.stderr),
         exitCode: tc.exit_code,
       }))
     );
